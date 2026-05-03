@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Masuk - KOS ERVIAN II</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-indigo-900 text-white flex flex-col h-full">
+        <div class="p-5 border-b border-indigo-800 text-center"><h1 class="text-xl font-bold">JURAGAN KOS</h1></div>
+        <nav class="flex-grow p-4 space-y-2">
+            <a href="dashboard-admin.html" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg"><i class="fa-solid fa-chart-pie w-6"></i> Dashboard</a>
+            <a href="data-kamar.html" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg"><i class="fa-solid fa-door-open w-6"></i> Data Kamar</a>
+            <a href="laporan-admin.html" class="flex items-center p-3 bg-indigo-800 rounded-lg"><i class="fa-solid fa-clipboard-list w-6"></i> Laporan Masuk</a>
+        </nav>
+        <div class="p-4 border-t border-indigo-800"><a href="login.html" class="text-rose-300 p-3 block"><i class="fa-solid fa-right-from-bracket mr-2"></i> Keluar</a></div>
+    </aside>
+
+    <div class="flex-1 overflow-y-auto">
+        <header class="bg-white p-5 shadow-sm border-b">
+            <h2 class="text-xl font-bold text-slate-800">Manajemen Laporan Kerusakan</h2>
+        </header>
+
+        <main class="p-6">
+            <div id="container-laporan" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+        </main>
+    </div>
+
+    <div id="modalLaporan" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4" onclick="tutupModal()">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+            <div class="p-4 border-b flex justify-between items-center">
+                <span class="font-bold text-slate-700">Detail Laporan</span>
+                <select id="update-status" onchange="updateStatus()" class="text-xs p-2 border rounded-lg font-bold bg-slate-50 outline-none">
+                    <option value="Pending">🔴 Pending</option>
+                    <option value="Proses">🔵 Proses</option>
+                    <option value="Selesai">🟢 Selesai</option>
+                </select>
+            </div>
+            <div class="p-4 bg-slate-50">
+                <img id="detailFoto" src="" class="w-full h-48 object-cover rounded-xl mb-4 border">
+                <h4 id="detailJudul" class="font-bold text-lg text-indigo-600"></h4>
+                <p id="detailKamar" class="text-xs text-slate-500 mb-2"></p>
+                <p id="detailDeskripsi" class="text-slate-700 text-sm italic bg-white p-3 rounded-lg border"></p>
+            </div>
+            <div class="p-4 border-t">
+                <button onclick="tutupModal()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition">Tutup Detail</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let indexAktif = null;
+
+        function muatLaporan() {
+            const daftar = JSON.parse(localStorage.getItem('daftarLaporanKerusakan')) || [];
+            const container = document.getElementById('container-laporan');
+            container.innerHTML = '';
+
+            daftar.forEach((lap, index) => {
+                let badge = lap.status === 'Pending' ? 'bg-rose-100 text-rose-600' : 
+                            lap.status === 'Proses' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600';
+                
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-bold text-slate-600">Kamar ${lap.kamar}</div>
+                            <div class="${badge} px-3 py-1 rounded-lg text-[10px] font-black uppercase">${lap.status}</div>
+                        </div>
+                        <h3 class="font-bold text-slate-800 mb-2 truncate">${lap.judul}</h3>
+                        <p class="text-slate-500 text-xs line-clamp-2 mb-6">${lap.deskripsi}</p>
+                        <div class="mt-auto flex gap-2">
+                            <button onclick="bukaModal(${index})" class="flex-1 bg-indigo-50 text-indigo-600 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition">Lihat & Update</button>
+                            <button onclick="hapusLaporan(${index})" class="bg-slate-50 text-slate-400 px-3 py-2 rounded-xl hover:bg-rose-500 hover:text-white transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function bukaModal(index) {
+            indexAktif = index;
+            const daftar = JSON.parse(localStorage.getItem('daftarLaporanKerusakan'));
+            const lap = daftar[index];
+            
+            document.getElementById('detailFoto').src = lap.foto;
+            document.getElementById('detailJudul').innerText = lap.judul;
+            document.getElementById('detailKamar').innerText = `Pelapor: ${lap.nama} | ${lap.tanggal}`;
+            document.getElementById('detailDeskripsi').innerText = lap.deskripsi;
+            document.getElementById('update-status').value = lap.status;
+            document.getElementById('modalLaporan').classList.remove('hidden');
+        }
+
+        function updateStatus() {
+            let daftar = JSON.parse(localStorage.getItem('daftarLaporanKerusakan'));
+            daftar[indexAktif].status = document.getElementById('update-status').value;
+            localStorage.setItem('daftarLaporanKerusakan', JSON.stringify(daftar));
+            muatLaporan();
+        }
+
+        function tutupModal() {
+            document.getElementById('modalLaporan').classList.add('hidden');
+        }
+
+        function hapusLaporan(index) {
+            if(confirm("Hapus laporan ini?")) {
+                let daftar = JSON.parse(localStorage.getItem('daftarLaporanKerusakan'));
+                daftar.splice(index, 1);
+                localStorage.setItem('daftarLaporanKerusakan', JSON.stringify(daftar));
+                muatLaporan();
+            }
+        }
+
+        window.onload = muatLaporan;
+    </script>
+</body>
+</html>

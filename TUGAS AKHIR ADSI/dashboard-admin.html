@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Juragan Kos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-indigo-900 text-white flex flex-col h-full">
+        <div class="p-5 border-b border-indigo-800 text-center"><h1 class="text-xl font-bold">KOS ERVIAN II</h1></div>
+        <nav class="flex-grow p-4 space-y-2">
+            <a href="dashboard-admin.html" class="flex items-center p-3 bg-indigo-800 rounded-lg"><i class="fa-solid fa-chart-pie w-6"></i> Dashboard</a>
+            <a href="data-kamar.html" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg"><i class="fa-solid fa-door-open w-6"></i> Data Kamar</a>
+            <a href="laporan-admin.html" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg"><i class="fa-solid fa-clipboard-list w-6"></i> Laporan Masuk</a>
+        </nav>
+        <div class="p-4 border-t border-indigo-800"><a href="login.html" class="text-rose-300 p-3 block"><i class="fa-solid fa-right-from-bracket mr-2"></i> Keluar</a></div>
+    </aside>
+
+    <div class="flex-1 overflow-y-auto">
+        <header class="bg-white p-5 shadow-sm flex justify-between">
+            <h2 class="text-xl font-bold text-slate-800">Verifikasi Pembayaran</h2>
+        </header>
+
+        <main class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+                    <p class="text-emerald-100 text-sm uppercase font-bold tracking-wider">Total Pendapatan</p>
+                    <h3 id="rekap-total" class="text-3xl font-bold mt-2">Rp 0</h3>
+                    <p class="text-[10px] mt-4 opacity-80 italic">*Dana dari status Lunas</p>
+                </div>
+                <div class="bg-amber-500 rounded-2xl p-6 text-white shadow-lg">
+                    <p class="text-amber-100 text-sm uppercase font-bold tracking-wider">Piutang (Belum Bayar)</p>
+                    <h3 id="rekap-piutang" class="text-3xl font-bold mt-2">Rp 0</h3>
+                    <p class="text-[10px] mt-4 opacity-80 italic">*Total tagihan aktif</p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 flex flex-col justify-center shadow-sm">
+                    <button onclick="cetakLaporan()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition mb-2">
+                        <i class="fa-solid fa-print mr-2"></i> Cetak Laporan
+                    </button>
+                    <p class="text-[10px] text-slate-400 text-center uppercase font-bold">Laporan Keuangan</p>
+                </div>
+            </div>
+
+            <div class="bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-2xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="font-bold text-indigo-900 text-lg"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Auto-Billing System</h3>
+                    <p class="text-sm text-indigo-600">Terbitkan tagihan untuk semua kamar berstatus <b>Terisi</b> secara otomatis.</p>
+                </div>
+                <button onclick="generateTagihanOtomatis()" class="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg whitespace-nowrap">
+                    Terbitkan Tagihan Bulan Ini
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-5 bg-slate-50 border-b border-slate-100 font-bold text-slate-700">
+                    <i class="fa-solid fa-receipt mr-2 text-indigo-500"></i> Daftar Konfirmasi Pembayaran
+                </div>
+                <div class="p-5">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-slate-500 text-sm uppercase">
+                                <th class="p-3 border-b">Kamar</th>
+                                <th class="p-3 border-b">Penghuni</th>
+                                <th class="p-3 border-b">Bulan</th>
+                                <th class="p-3 border-b text-center">Bukti</th>
+                                <th class="p-3 border-b text-center">Status/Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-bayar"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border p-6 mt-6">
+                <details>
+                    <summary class="font-bold text-slate-500 cursor-pointer hover:text-indigo-600 transition">
+                        <i class="fa-solid fa-ticket mr-2"></i> Terbitkan Tagihan Manual (Klik untuk buka)
+                    </summary>
+                    <form onsubmit="buatToken(event)" class="flex flex-wrap gap-4 mt-4">
+                        <input type="text" id="token-kamar" placeholder="No. Kamar" required class="p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm w-40">
+                        <input type="number" id="token-harga" placeholder="Jumlah (Nominal)" required class="p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm w-48">
+                        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-md">Kirim Tagihan</button>
+                    </form>
+                </details>
+            </div>
+        </main>
+    </div>
+
+    <div id="modalBukti" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4" onclick="tutupModal()">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+            <div class="p-4 border-b font-bold text-slate-700">Detail Bukti Transfer</div>
+            <div class="p-4 bg-slate-50 flex justify-center">
+                <img id="imgPreview" src="" class="max-h-[60vh] w-auto rounded-lg shadow-sm">
+            </div>
+            <div class="p-4 border-t">
+                <button onclick="tutupModal()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition">Tutup Halaman</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function muatData() {
+            const listBayar = JSON.parse(localStorage.getItem('dataPembayaranKos')) || [];
+            const tabel = document.getElementById('tabel-bayar');
+            tabel.innerHTML = '';
+
+            if(listBayar.length === 0) {
+                tabel.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-slate-400 italic text-sm">Belum ada data pembayaran.</td></tr>';
+            } else {
+                listBayar.forEach((b, i) => {
+                    let aksiTombol = b.status === 'Menunggu' 
+                        ? `<button onclick="terima(${i})" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition">Terima</button>`
+                        : `<span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-check-double"></i> Terverifikasi</span>`;
+
+                    tabel.innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b transition">
+                            <td class="p-3 font-bold text-indigo-600">${b.kamar}</td>
+                            <td class="p-3">${b.nama}</td>
+                            <td class="p-3">${b.bulan}</td>
+                            <td class="p-3 text-center">
+                                <button onclick="lihatBukti('${b.bukti}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-200 transition">
+                                    <i class="fa-solid fa-eye mr-1"></i> Foto
+                                </button>
+                            </td>
+                            <td class="p-3 text-center">
+                                ${aksiTombol}
+                                <button onclick="hapusData(${i})" class="ml-2 text-slate-300 hover:text-rose-500 transition"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>`;
+                });
+            }
+            hitungKeuangan();
+        }
+
+        // FUNGSI AUTO-BILLING BERDASARKAN STATUS KAMAR
+        function generateTagihanOtomatis() {
+            const daftarKamar = JSON.parse(localStorage.getItem('dataKamarKos')) || [];
+            let daftarToken = JSON.parse(localStorage.getItem('tokenTagihanKos')) || [];
+            
+            const skrg = new Date();
+            const bulanIni = `${skrg.getFullYear()}-${String(skrg.getMonth() + 1).padStart(2, '0')}`;
+
+            const kamarTerisi = daftarKamar.filter(k => k.status === 'Terisi');
+
+            if (kamarTerisi.length === 0) {
+                alert("⚠️ Tidak ada kamar dengan status 'Terisi'. Pastikan data kamar sudah diupdate.");
+                return;
+            }
+
+            let count = 0;
+            kamarTerisi.forEach(k => {
+                const sudahAda = daftarToken.find(t => t.kamar === k.nomor && t.bulanTagihan === bulanIni);
+
+                if (!sudahAda) {
+                    daftarToken.push({
+                        idToken: 'TKN-' + Math.floor(Math.random() * 10000),
+                        kamar: k.nomor,
+                        jumlah: parseInt(k.harga),
+                        status: 'Belum Bayar',
+                        tanggal: new Date().toLocaleDateString('id-ID'),
+                        bulanTagihan: bulanIni
+                    });
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                localStorage.setItem('tokenTagihanKos', JSON.stringify(daftarToken));
+                alert(`✅ Berhasil menerbitkan ${count} tagihan untuk periode ${bulanIni}.`);
+                muatData();
+            } else {
+                alert("ℹ️ Semua kamar sudah memiliki tagihan untuk bulan ini.");
+            }
+        }
+
+        function hitungKeuangan() {
+            const listBayar = JSON.parse(localStorage.getItem('dataPembayaranKos')) || [];
+            const daftarToken = JSON.parse(localStorage.getItem('tokenTagihanKos')) || [];
+            
+            let totalLunas = 0;
+            listBayar.forEach(b => {
+                if(b.status === 'Lunas') totalLunas += (b.jumlah || 0);
+            });
+
+            let totalPiutang = 0;
+            daftarToken.forEach(t => {
+                if(t.status === 'Belum Bayar') totalPiutang += t.jumlah;
+            });
+
+            document.getElementById('rekap-total').innerText = "Rp " + totalLunas.toLocaleString('id-ID');
+            document.getElementById('rekap-piutang').innerText = "Rp " + totalPiutang.toLocaleString('id-ID');
+        }
+
+        function buatToken(e) {
+            e.preventDefault();
+            const kamar = document.getElementById('token-kamar').value;
+            const harga = parseInt(document.getElementById('token-harga').value);
+            let daftarToken = JSON.parse(localStorage.getItem('tokenTagihanKos')) || [];
+            
+            daftarToken.push({
+                idToken: 'TKN-' + Math.floor(Math.random() * 10000),
+                kamar: kamar,
+                jumlah: harga,
+                status: 'Belum Bayar',
+                tanggal: new Date().toLocaleDateString('id-ID')
+            });
+            
+            localStorage.setItem('tokenTagihanKos', JSON.stringify(daftarToken));
+            alert("✅ Tagihan manual terkirim!");
+            e.target.reset();
+            muatData();
+        }
+
+        function terima(index) {
+            let listBayar = JSON.parse(localStorage.getItem('dataPembayaranKos')) || [];
+            let daftarToken = JSON.parse(localStorage.getItem('tokenTagihanKos')) || [];
+            const kamarTarget = listBayar[index].kamar;
+
+            let tokenIndex = daftarToken.findIndex(t => t.kamar === kamarTarget && t.status === 'Belum Bayar');
+            
+            if (tokenIndex !== -1) {
+                listBayar[index].jumlah = daftarToken[tokenIndex].jumlah;
+                daftarToken[tokenIndex].status = 'Lunas';
+            } else {
+                listBayar[index].jumlah = 800000; 
+            }
+
+            listBayar[index].status = 'Lunas';
+            localStorage.setItem('dataPembayaranKos', JSON.stringify(listBayar));
+            localStorage.setItem('tokenTagihanKos', JSON.stringify(daftarToken));
+            
+            alert(`✅ Pembayaran Kamar ${kamarTarget} Berhasil.`);
+            muatData();
+        }
+
+        function cetakLaporan() {
+            const listBayar = JSON.parse(localStorage.getItem('dataPembayaranKos')) || [];
+            const lunas = listBayar.filter(b => b.status === 'Lunas');
+            let total = 0;
+            let html = `<h2>LAPORAN PENDAPATAN JURAGAN KOS</h2><table border="1" style="width:100%; border-collapse:collapse;">
+                <thead><tr><th>Tanggal</th><th>Kamar</th><th>Nama</th><th>Bulan</th><th>Nominal</th></tr></thead><tbody>`;
+            lunas.forEach(b => {
+                html += `<tr><td>${b.tanggal}</td><td>${b.kamar}</td><td>${b.nama}</td><td>${b.bulan}</td><td>Rp ${(b.jumlah||0).toLocaleString()}</td></tr>`;
+                total += (b.jumlah || 0);
+            });
+            html += `</tbody></table><h3>TOTAL: Rp ${total.toLocaleString()}</h3>`;
+            const win = window.open('', '', 'height=700,width=900');
+            win.document.write(html);
+            win.document.close();
+            win.print();
+        }
+
+        function hapusData(i) {
+            if(confirm("Hapus riwayat?")) {
+                let list = JSON.parse(localStorage.getItem('dataPembayaranKos'));
+                list.splice(i, 1);
+                localStorage.setItem('dataPembayaranKos', JSON.stringify(list));
+                muatData();
+            }
+        }
+
+        function lihatBukti(src) { document.getElementById('imgPreview').src = src; document.getElementById('modalBukti').classList.remove('hidden'); }
+        function tutupModal() { document.getElementById('modalBukti').classList.add('hidden'); }
+
+        window.onload = muatData;
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Juragan Kos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 flex flex-col items-center justify-center h-screen">
+    
+    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md z-10">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-indigo-900"><i class="fa-solid fa-building-user mr-2"></i> KOS ERVIAN II</h1>
+            <p class="text-slate-500 mt-2 text-sm">Silakan login ke akun Anda</p>
+        </div>
+        <form onsubmit="prosesLogin(event)" class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Username (Nomor Kamar / admin)</label>
+                <input type="text" id="username" required placeholder="Contoh: 101" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                <input type="password" id="password" required placeholder="Masukkan password" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-md">
+                <i class="fa-solid fa-right-to-bracket mr-2"></i> Masuk
+            </button>
+        </form>
+        <div class="mt-6 text-center">
+            <p class="text-xs text-slate-400 font-medium italic">Hubungi admin jika Anda lupa password kamar Anda.</p>
+        </div>
+    </div>
+
+    <footer class="mt-8 text-center text-slate-400">
+        <div class="text-[10px] uppercase tracking-[0.2em] font-bold">
+            <p>© 2026 Analisis & Desain Sistem C — Tugas Akhir</p>
+        </div>
+        <div class="mt-2 text-[11px] leading-relaxed opacity-70">
+            <p>Gian Farel Markus Jauply - 682025078</p>
+            <p>MIchelle Jacqluine Sina - 682025092</p> 
+            <p>Rasya Rival Dirgantara - 682025048</p> 
+        </div>
+    </footer>
+
+    <script>
+        // Inisialisasi data default jika masih kosong (untuk testing awal)
+        if (!localStorage.getItem('dataKamarKos')) {
+            localStorage.setItem('dataKamarKos', JSON.stringify([
+                { no: '101', status: 'Terisi', nama: 'Andi Saputra', user: '101', pw: '12345' },
+                { no: '102', status: 'Kosong', nama: '-', user: '', pw: '' }
+            ]));
+        }
+
+        function prosesLogin(e) {
+            e.preventDefault();
+            const userInp = document.getElementById('username').value;
+            const passInp = document.getElementById('password').value;
+            
+            // 1. LOGIN SEBAGAI ADMIN
+            if (userInp === 'admin' && passInp === 'admin123') {
+                localStorage.setItem('currentUser', JSON.stringify({ role: 'admin', nama: 'Admin Utama' }));
+                window.location.href = 'dashboard-admin.html';
+                return;
+            }
+
+            // 2. LOGIN SEBAGAI PENGHUNI
+            const dataKamar = JSON.parse(localStorage.getItem('dataKamarKos')) || [];
+            const akun = dataKamar.find(k => k.user === userInp && k.pw === passInp && k.status === 'Terisi');
+
+            if (akun) {
+                localStorage.setItem('currentUser', JSON.stringify({ 
+                    role: 'penghuni', 
+                    nama: akun.nama, 
+                    kamar: akun.no 
+                }));
+                window.location.href = 'dashboard-penghuni.html';
+            } else {
+                alert('❌ Username atau Password salah!\nAtau kamar Anda belum diaktifkan oleh Admin.');
+            }
+        }
+    </script>
+</body>
+</html>

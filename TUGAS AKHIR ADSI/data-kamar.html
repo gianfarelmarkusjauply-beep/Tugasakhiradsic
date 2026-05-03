@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Kamar - KOS ERVIAN II</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-indigo-900 text-white flex flex-col h-full">
+        <div class="p-5 border-b border-indigo-800 text-center"><h1 class="text-xl font-bold text-indigo-400">JURAGAN KOS</h1></div>
+        <nav class="flex-grow p-4 space-y-2">
+            <a href="dashboard-admin.html" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg transition"><i class="fa-solid fa-chart-pie w-6"></i> Dashboard</a>
+            <a href="data-kamar.html" class="flex items-center p-3 bg-indigo-800 rounded-lg"><i class="fa-solid fa-door-open w-6"></i> Data Kamar</a>
+            <a href="laporan-admin.html" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg transition"><i class="fa-solid fa-clipboard-list w-6"></i> Laporan Masuk</a>
+        </nav>
+        <div class="p-4 border-t border-indigo-800">
+            <a href="login.html" class="flex items-center p-3 text-rose-300 hover:bg-rose-500/20 rounded-lg transition"><i class="fa-solid fa-right-from-bracket w-6"></i> Keluar</a>
+        </div>
+    </aside>
+
+    <div class="flex-1 overflow-y-auto">
+        <header class="bg-white p-5 shadow-sm border-b border-slate-100 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-slate-800">Kelola Data Kamar</h2>
+            <div class="text-sm text-slate-500">Admin Utama</div>
+        </header>
+
+        <main class="p-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-list-check mr-2 text-indigo-500"></i>Daftar Seluruh Kamar</h3>
+                    <button onclick="tambahKamar()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold transition shadow-sm">
+                        <i class="fa-solid fa-plus mr-2"></i>Tambah Kamar Baru
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 uppercase text-xs tracking-wider">
+                                <th class="p-4 border-b">No. Kamar</th>
+                                <th class="p-4 border-b">Status</th>
+                                <th class="p-4 border-b">Akses Akun (User/PW)</th>
+                                <th class="p-4 border-b text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-kamar" class="text-sm">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function muatKamar() {
+            let data = JSON.parse(localStorage.getItem('dataKamarKos')) || [];
+            data.sort((a,b) => parseInt(a.no) - parseInt(b.no));
+            const tabel = document.getElementById('tabel-kamar');
+            tabel.innerHTML = '';
+            
+            data.forEach((k) => {
+                let statusBadge = k.status === 'Terisi' 
+                    ? `<span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-bold">Terisi: ${k.nama}</span>` 
+                    : `<span class="px-3 py-1 bg-slate-100 text-slate-400 rounded-full italic">Kosong</span>`;
+                
+                // Menampilkan User & PW sesuai data k.user dan k.pw
+                let infoAkses = k.status === 'Terisi' 
+                    ? `<div class="bg-indigo-50 p-2 rounded-lg border border-indigo-100">
+                         <p class="text-xs">User: <b class="text-indigo-700">${k.user}</b></p>
+                         <p class="text-xs">Pass: <b class="text-indigo-700">${k.pw}</b></p>
+                       </div>`
+                    : `<span class="text-slate-300">-</span>`;
+
+                let tombolIsi = k.status === 'Kosong' 
+                    ? `<button onclick="isiKamar('${k.no}')" class="text-indigo-600 font-semibold hover:underline mr-4"><i class="fa-solid fa-user-plus mr-1"></i>Isi Kamar</button>` 
+                    : `<button onclick="kosongkan('${k.no}')" class="text-amber-600 font-semibold hover:underline mr-4"><i class="fa-solid fa-user-minus mr-1"></i>Kosongkan</button>`;
+                
+                tabel.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="p-4 font-bold text-slate-700 text-lg">${k.no}</td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4">${infoAkses}</td>
+                        <td class="p-4 text-center">
+                            ${tombolIsi}
+                            <button onclick="hapus('${k.no}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function tambahKamar() {
+            let no = prompt("Masukkan Nomor Kamar Baru:");
+            if(!no) return;
+            let data = JSON.parse(localStorage.getItem('dataKamarKos')) || [];
+            if(data.some(k => k.no === no)) return alert("Nomor kamar ini sudah terdaftar!");
+            
+            data.push({
+                no: no, 
+                status: 'Kosong', 
+                nama: '-', 
+                user: '', 
+                pw: '' 
+            });
+            localStorage.setItem('dataKamarKos', JSON.stringify(data));
+            muatKamar();
+        }
+
+        function isiKamar(no) {
+            let nama = prompt("Nama Penghuni:");
+            if(!nama) return;
+            let password = prompt("Buat Password untuk Penghuni ini:", "kos123");
+            
+            let data = JSON.parse(localStorage.getItem('dataKamarKos'));
+            let i = data.findIndex(k => k.no === no);
+            
+            data[i].status = 'Terisi'; 
+            data[i].nama = nama;
+            data[i].user = no; // Username otomatis nomor kamar
+            data[i].pw = password; 
+            
+            localStorage.setItem('dataKamarKos', JSON.stringify(data));
+            alert(`✅ Kamar ${no} berhasil diisi!\nUser: ${no}\nPW: ${password}`);
+            muatKamar();
+        }
+
+        function kosongkan(no) {
+            if(!confirm(`Yakin ingin mengosongkan Kamar ${no}?`)) return;
+            let data = JSON.parse(localStorage.getItem('dataKamarKos'));
+            let i = data.findIndex(k => k.no === no);
+            
+            data[i].status = 'Kosong'; 
+            data[i].nama = '-';
+            data[i].user = ''; 
+            data[i].pw = ''; 
+
+            localStorage.setItem('dataKamarKos', JSON.stringify(data));
+            muatKamar();
+        }
+
+        function hapus(no) {
+            if(!confirm(`Hapus permanen kamar ${no}?`)) return;
+            let data = JSON.parse(localStorage.getItem('dataKamarKos')).filter(k => k.no !== no);
+            localStorage.setItem('dataKamarKos', JSON.stringify(data));
+            muatKamar();
+        }
+
+        window.onload = muatKamar;
+    </script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Penghuni - KOS ERVIAN II</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-indigo-900 text-white flex flex-col h-full">
+        <div class="p-5 border-b border-indigo-800 text-center"><h1 class="text-xl font-bold">AREA PENGHUNI</h1></div>
+        <nav class="flex-grow p-4 space-y-2">
+            <a href="dashboard-penghuni.html" class="flex items-center p-3 bg-indigo-800 rounded-lg"><i class="fa-solid fa-house-user w-6"></i> Dashboard</a>
+            <a href="dashboard-laporan.html" class="flex items-center p-3 hover:bg-indigo-800 rounded-lg"><i class="fa-solid fa-screwdriver-wrench w-6"></i> Lapor Kerusakan</a>
+        </nav>
+        <div class="p-4 border-t border-indigo-800">
+            <a href="login.html" onclick="logout()" class="flex items-center p-3 text-rose-300 hover:bg-rose-500/20 rounded-lg transition">
+                <i class="fa-solid fa-right-from-bracket w-6"></i> Keluar
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 overflow-y-auto">
+        <header class="bg-white p-5 shadow-sm flex justify-between items-center border-b border-slate-100">
+            <h2 class="text-xl font-bold text-slate-800">
+                Halo, <span id="nama-user" class="text-indigo-600">Nama</span> penghuni kamar <span id="kamar-user" class="text-indigo-600">000</span>
+            </h2>
+            <div class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                Status: Aktif
+            </div>
+        </header>
+        
+        <main class="p-6 space-y-6 max-w-4xl">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <div class="space-y-6">
+                    <div id="box-tagihan" class="bg-emerald-500 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden transition-all duration-500">
+                        <div class="relative z-10">
+                            <p class="text-indigo-50 text-sm opacity-80">Total Tagihan Saat Ini</p>
+                            <h3 id="display-tagihan" class="text-4xl font-bold mb-2">Rp 0</h3>
+                            <p id="info-token" class="text-[10px] bg-white/20 p-1 px-2 rounded w-fit italic tracking-wide">Tidak ada tagihan aktif</p>
+                        </div>
+                        <i class="fa-solid fa-file-invoice-dollar absolute -right-4 -bottom-4 text-8xl text-white/10 rotate-12"></i>
+                    </div>
+
+                    <div id="container-form" class="hidden bg-white rounded-2xl shadow-sm border p-6 animate-fade-in">
+                        <h3 class="font-bold text-lg text-slate-700 mb-4 text-center">Konfirmasi Pembayaran</h3>
+                        <form id="form-bayar" onsubmit="kirimBukti(event)" class="space-y-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase">Periode Bulan</label>
+                                <input type="month" id="input-bulan" required class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                            </div>
+
+                            <input type="hidden" id="nominal-otomatis">
+                            
+                            <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition border-slate-300">
+                                <i class="fa-solid fa-camera text-slate-400 text-xl mb-1"></i>
+                                <p id="label-file" class="text-xs text-slate-500 font-medium">Upload Bukti Transfer</p>
+                                <input type="file" id="input-file" accept="image/*" required class="hidden" onchange="updateLabel(this)" />
+                            </label>
+                            
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-md">
+                                Kirim Konfirmasi Pembayaran
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col h-fit">
+                    <div class="p-4 border-b bg-slate-50 font-bold text-slate-700 text-sm flex justify-between items-center">
+                        <span>Riwayat Pembayaran</span>
+                        <i class="fa-solid fa-clock-rotate-left text-slate-400"></i>
+                    </div>
+                    <div class="overflow-y-auto max-h-[450px]">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-[10px] text-slate-400 uppercase bg-slate-50/50 border-b">
+                                <tr>
+                                    <th class="px-4 py-3">Bulan</th>
+                                    <th class="px-4 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-riwayat"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const userSession = JSON.parse(localStorage.getItem('currentUser'));
+
+        if (userSession && userSession.role === 'penghuni') {
+            document.getElementById('nama-user').innerText = userSession.nama;
+            document.getElementById('kamar-user').innerText = userSession.kamar;
+        } else {
+            window.location.href = 'login.html';
+        }
+
+        // Logic Hitung Tagihan Dinamis (SINKRON DENGAN AUTO-BILL ADMIN)
+        function hitungTagihan() {
+            const daftarToken = JSON.parse(localStorage.getItem('tokenTagihanKos')) || [];
+            // Mencari token yang nomor kamarnya sama dan statusnya Belum Bayar
+            const tagihanSaya = daftarToken.filter(t => t.kamar == userSession.kamar && t.status === 'Belum Bayar');
+            
+            let total = 0;
+            tagihanSaya.forEach(t => total += t.jumlah);
+            
+            const display = document.getElementById('display-tagihan');
+            const info = document.getElementById('info-token');
+            const formBox = document.getElementById('container-form');
+            const boxBg = document.getElementById('box-tagihan');
+            const hiddenNominal = document.getElementById('nominal-otomatis');
+
+            display.innerText = "Rp " + total.toLocaleString('id-ID');
+            hiddenNominal.value = total; // Simpan nominal untuk dikirim ke riwayat nanti
+
+            if (total > 0) {
+                info.innerText = `Terdeteksi ${tagihanSaya.length} tagihan belum dibayar`;
+                formBox.classList.remove('hidden');
+                boxBg.classList.replace('bg-emerald-500', 'bg-indigo-600');
+            } else {
+                info.innerText = "Semua tagihan sudah lunas. Terima kasih!";
+                formBox.classList.add('hidden');
+                boxBg.classList.replace('bg-indigo-600', 'bg-emerald-500');
+            }
+        }
+
+        function muatRiwayat() {
+            const listBayar = JSON.parse(localStorage.getItem('dataPembayaranKos')) || [];
+            const tabel = document.getElementById('tabel-riwayat');
+            tabel.innerHTML = '';
+
+            const milikSaya = listBayar.filter(b => b.nama === userSession.nama && b.kamar === userSession.kamar);
+
+            if(milikSaya.length === 0) {
+                tabel.innerHTML = '<tr><td colspan="2" class="p-6 text-center text-slate-400 italic text-xs">Belum ada riwayat transaksi.</td></tr>';
+                return;
+            }
+
+            milikSaya.reverse().forEach(b => {
+                let colorClass = b.status === 'Menunggu' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+                
+                tabel.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="px-4 py-4">
+                            <div class="font-bold text-slate-700">${b.bulan}</div>
+                            <div class="text-[10px] text-slate-400">Rp ${(b.jumlah || 0).toLocaleString()} • ${b.tanggal}</div>
+                        </td>
+                        <td class="px-4 py-4 text-right">
+                            <span class="${colorClass} px-2 py-1 rounded text-[10px] font-black tracking-tighter uppercase">${b.status}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateLabel(input) {
+            const label = document.getElementById('label-file');
+            if (input.files && input.files[0]) {
+                label.innerText = input.files[0].name;
+                label.classList.add('text-indigo-600', 'font-bold');
+            }
+        }
+
+        function kirimBukti(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('input-file');
+            const bulanInp = document.getElementById('input-bulan').value;
+            const nominalOto = parseInt(document.getElementById('nominal-otomatis').value);
+            const file = fileInput.files[0];
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let listBayar = JSON.parse(localStorage.getItem('dataPembayaranKos')) || [];
+                    
+                    listBayar.push({
+                        tanggal: new Date().toLocaleDateString('id-ID'),
+                        kamar: userSession.kamar,
+                        nama: userSession.nama,
+                        bulan: bulanInp,
+                        bukti: e.target.result,
+                        jumlah: nominalOto, // MENGIRIM NOMINAL HARGA DARI ADMIN
+                        status: 'Menunggu'
+                    });
+
+                    localStorage.setItem('dataPembayaranKos', JSON.stringify(listBayar));
+                    
+                    alert("✅ Bukti terkirim! Nominal tagihan Rp " + nominalOto.toLocaleString() + " sedang diverifikasi admin.");
+                    
+                    document.getElementById('form-bayar').reset();
+                    document.getElementById('label-file').innerText = "Upload Bukti Transfer";
+                    
+                    muatRiwayat();
+                    hitungTagihan();
+                } catch (err) {
+                    alert("Foto terlalu besar! Gunakan screenshot yang ukurannya lebih kecil.");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+
+        window.onload = function() {
+            muatRiwayat();
+            hitungTagihan();
+        };
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.5s ease forwards; }
+    </style>
+</body>
+</html>
